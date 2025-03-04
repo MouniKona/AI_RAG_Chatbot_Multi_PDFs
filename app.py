@@ -106,6 +106,15 @@ def main():
     st.set_page_config("Multi PDF Chatbot", page_icon=":scroll:")
     st.header("Multi-PDF's 🗐 - Chat Agent 🤖 ")
 
+    # Display previous chat history
+    # Initialize the session state for storing chat messages and chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []  # Current chat messages
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []  # List of saved chats, each chat is a list of messages
+    if "active_chat_index" not in st.session_state:
+        st.session_state.active_chat_index = None  # Tracks which chat is currently active
+
     with st.sidebar:
         st.title("📁 Upload PDF File's Section")
         docs = st.file_uploader("Upload your PDF Files & Click on Submit & Process", accept_multiple_files=True)
@@ -118,15 +127,57 @@ def main():
                 st.success("Processing complete!")
                 logger.info("PDF processing and vector storage completed.")
 
+                # Display previous chat history in the sidebar
+        st.write("---")
+        st.write("### Chat History 📝")
+        if st.button("New Chat"):
+            if st.session_state.messages:  # Save current chat if it has messages
+                if st.session_state.active_chat_index is not None:
+                     # Update the existing chat in history if the user was in a previous chat
+                    st.session_state.chat_history[
+                    st.session_state.active_chat_index] = st.session_state.messages.copy()
+                else:
+                    # Save the new chat if it was not linked to an existing history
+                    st.session_state.chat_history.append(st.session_state.messages.copy())
+                    st.session_state.messages = []  # Clear chat messages for new chat
+                    st.session_state.active_chat_index = None  # Reset active chat index
+                    st.rerun()  # <-- CHANGED FROM st.experimental_rerun() TO st.rerun()
+
+    # Display existing chat messages
+    for message in st.session_state.messages:
+        if message["role"] == "user":
+            with st.chat_message("user"):
+                st.write(message["content"])
+        else:
+            with st.chat_message("assistant"):
+                st.write(message["content"])
+
     # Chat input field
     if prompt := st.chat_input("Ask a Question from the Data uploaded .. ⌨"):
+         # Save the user's message
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # If the user is in an active chat, update the corresponding chat in history
+        if st.session_state.active_chat_index is not None:
+            st.session_state.chat_history[st.session_state.active_chat_index] = st.session_state.messages.copy()
 
         # Display user's message
-        st.write(prompt)
+        with st.chat_message("user"):
+            st.write(prompt)
 
         # Simulated assistant response
         response = user_input(prompt)
-        st.write(response)
+
+        # Save assistant's response
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+        # If the user is in an active chat, update the corresponding chat in history
+        if st.session_state.active_chat_index is not None:
+            st.session_state.chat_history[st.session_state.active_chat_index] = st.session_state.messages.copy()
+
+        # Display assistant's response with typing animation
+        with st.chat_message("assistant"):
+            st.write(response)
 
     st.markdown("""
         <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #0E1117; padding: 15px; text-align: center;">
