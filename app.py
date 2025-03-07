@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 ])
 logger = logging.getLogger(__name__)
 
+
 def simulate_typing(text, placeholder, typing_speed=0.0001):
     """
     Simulates typing animation for assistant response.
@@ -43,6 +44,7 @@ def simulate_typing(text, placeholder, typing_speed=0.0001):
         placeholder.markdown(f"{typed_text}")
         time.sleep(typing_speed)
     placeholder.markdown(f"{text}")  # Ensure the full response is displayed
+
 
 # Function to extract text from PDFs
 def get_doc_text(docs):
@@ -121,7 +123,6 @@ def main():
     st.set_page_config("Multi PDF Chatbot", page_icon=":scroll:")
     st.header("Multi-PDF's 🗐 - Chat Agent 🤖 ")
 
-    # Display previous chat history
     # Initialize the session state for storing chat messages and chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []  # Current chat messages
@@ -142,20 +143,27 @@ def main():
                 st.success("Processing complete!")
                 logger.info("PDF processing and vector storage completed.")
 
-                # Display previous chat history in the sidebar
+        # Display previous chat history in the sidebar
         st.write("---")
         st.write("### Chat History 📝")
         if st.button("New Chat"):
             if st.session_state.messages:  # Save current chat if it has messages
                 if st.session_state.active_chat_index is not None:
-                     # Update the existing chat in history if the user was in a previous chat
-                    st.session_state.chat_history[
-                    st.session_state.active_chat_index] = st.session_state.messages.copy()
+                    # Update the existing chat in history if the user was in a previous chat
+                    st.session_state.chat_history[st.session_state.active_chat_index] = st.session_state.messages.copy()
                 else:
                     # Save the new chat if it was not linked to an existing history
                     st.session_state.chat_history.append(st.session_state.messages.copy())
-                    st.session_state.messages = []  # Clear chat messages for new chat
-                    st.session_state.active_chat_index = None  # Reset active chat index
+            st.session_state.messages = []  # Clear chat messages for new chat
+            st.session_state.active_chat_index = None  # Reset active chat index
+            st.rerun()  # <-- CHANGED FROM st.experimental_rerun() TO st.rerun()
+
+        if st.session_state.chat_history:
+            for i, chat in enumerate(st.session_state.chat_history):
+                chat_name = f"Chat {i + 1} ({len(chat)} messages)"
+                if st.button(chat_name, key=f"chat_{i}"):
+                    st.session_state.messages = chat.copy()  # Load selected chat history
+                    st.session_state.active_chat_index = i  # Set the active chat index
                     st.rerun()  # <-- CHANGED FROM st.experimental_rerun() TO st.rerun()
 
     # Display existing chat messages
@@ -169,7 +177,7 @@ def main():
 
     # Chat input field
     if prompt := st.chat_input("Ask a Question from the Data uploaded .. ⌨"):
-         # Save the user's message
+        # Save the user's message
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         # If the user is in an active chat, update the corresponding chat in history
@@ -198,10 +206,11 @@ def main():
 
     st.markdown("""
         <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #0E1117; padding: 15px; text-align: center;">
-            © <a href="https://github.com/JagadeeshAjjada" target="_blank">Mounica Kona</a>️
+            © <a href="https://github.com/JagadeeshAjjada" target="_blank">Jagadeesh Ajjada</a>️
         </div>
     """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
     main()
+
